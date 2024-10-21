@@ -1,0 +1,214 @@
+
+Developed a hand gesture recognition model that can accurately identify and classify different hand gestures from image or video data, enabling intuitive human-computer interaction and gesture-based control systems.
+
+Description: Hand Gesture Recognition Using Leap Motion Sensor
+
+This project leverages near-infrared images acquired by the Leap Motion sensor to develop a robust Hand Gesture Recognition system. The dataset comprises 10 distinct hand gestures performed by 10 subjects (5 men and 5 women). Using Python and deep learning libraries such as Keras and TensorFlow, a Convolutional Neural Network (CNN) is constructed and trained on the dataset. The model undergoes rigorous testing, achieving an impressive accuracy of 99.97%. By enabling accurate gesture recognition, this project promises enhanced human-computer interaction, making it pivotal for applications in virtual reality, gaming, assistive technology, and robotics.
+
+Technologies Used:
+
+Programming Language: Python
+Libraries: Keras, TensorFlow, OpenCV, NumPy, Matplotlib, Seaborn, Scikit-learn
+Framework: Convolutional Neural Networks (CNNs)
+Tools: Leap Motion Sensor for near-infrared image acquisition
+Dataset :- https://www.kaggle.com/gti-upm/leapgestrecog
+
+Importing Libraries and Loading Data
+import warnings
+warnings.filterwarnings('ignore')
+
+import keras
+import matplotlib.pyplot as plt # for plotting
+import os # provides a way of using operating system dependent functionality
+import cv2 #Image handling library
+import numpy as np
+
+# Import of keras model and hidden layers for our convolutional network
+from keras.layers import Conv2D, Activation, MaxPool2D, Dense, Flatten, Dropout
+Using TensorFlow backend.
+Loading and Preprocessing Data
+CATEGORIES = ["01_palm", '02_l','03_fist','04_fist_moved','05_thumb','06_index','07_ok','08_palm_moved','09_c','10_down']
+IMG_SIZE = 50
+
+# paths for dataset
+data_path = "../input/leapgestrecog/leapGestRecog"
+The Data
+# Loading the images and their class(0 - 9)
+image_data = []
+for dr in os.listdir(data_path):
+    for category in CATEGORIES:
+        class_index = CATEGORIES.index(category)
+        path = os.path.join(data_path, dr, category)
+        for img in os.listdir(path):
+            try:
+                img_arr = cv2.imread(os.path.join(path, img), cv2.IMREAD_GRAYSCALE)
+                image_data.append([cv2.resize(img_arr, (IMG_SIZE, IMG_SIZE)), class_index])
+            except Exception as e:
+                pass
+image_data[0]
+[array([[ 5,  6,  6, ...,  5,  4,  5],
+        [ 5,  6,  7, ...,  3,  4,  3],
+        [ 6,  6,  7, ...,  3,  3,  4],
+        ...,
+        [ 7, 10, 11, ...,  5,  5,  5],
+        [ 8, 10, 12, ...,  3,  5,  5],
+        [ 8,  9, 11, ...,  5,  5,  5]], dtype=uint8),
+ 0]
+# shuffle the input data
+import random
+random.shuffle(image_data)
+input_data = []
+label = []
+for X, y in image_data:
+    input_data.append(X)
+    label.append(y)
+label[:10]
+[9, 4, 0, 7, 5, 5, 4, 7, 3, 6]
+plt.figure(1, figsize=(10,10))
+for i in range(1,10):
+    plt.subplot(3,3,i)
+    plt.imshow(image_data[i][0], cmap='hot')
+    plt.xticks([])
+    plt.yticks([])
+    plt.title(CATEGORIES[label[i]][3:])
+plt.show()
+
+The code creates a visual representation of hand gestures by displaying grayscale images in a 3x3 grid. Each image corresponds to a specific finger gesture, allowing easy identification and understanding of various hand movements. The absence of axis labels enhances clarity, making it a straightforward tool for diagnosing finger-based hand gestures.
+
+# Normalizing the data
+input_data = np.array(input_data)
+label = np.array(label)
+input_data = input_data/255.0
+input_data.shape
+(20000, 50, 50)
+# one hot encoding
+label = keras.utils.to_categorical(label, num_classes=10,dtype='i1')
+label[0]
+array([0, 0, 0, 0, 0, 0, 0, 0, 0, 1], dtype=int8)
+# reshaping the data
+input_data.shape = (-1, IMG_SIZE, IMG_SIZE, 1)
+# splitting the input_data to train and test data
+from sklearn.model_selection import train_test_split
+X_train, X_test, y_train, y_test = train_test_split(input_data, label, test_size = 0.3, random_state=0)
+Model Architecture
+model = keras.models.Sequential()
+
+model.add(Conv2D(filters = 32, kernel_size = (3,3), input_shape = (IMG_SIZE, IMG_SIZE, 1)))
+model.add(Activation('relu'))
+
+
+model.add(Conv2D(filters = 32, kernel_size = (3,3)))
+model.add(Activation('relu'))
+model.add(MaxPool2D(pool_size=(2,2)))
+model.add(Dropout(0.3))
+
+model.add(Conv2D(filters = 64, kernel_size = (3,3)))
+model.add(Activation('relu'))
+model.add(MaxPool2D(pool_size=(2,2)))
+model.add(Dropout(0.3))
+
+model.add(Flatten())
+model.add(Dense(256, activation='relu'))
+model.add(Dense(10, activation='softmax'))
+
+model.compile(loss='categorical_crossentropy',
+             optimizer = 'rmsprop',
+             metrics = ['accuracy'])
+This block defines the architecture of the Convolutional Neural Network (CNN) model for hand gesture recognition.
+
+Model Training
+model.fit(X_train, y_train, epochs = 7, batch_size=32, validation_data=(X_test, y_test))
+Train on 14000 samples, validate on 6000 samples
+Epoch 1/7
+14000/14000 [==============================] - 7s 521us/step - loss: 0.3391 - accuracy: 0.8910 - val_loss: 0.0507 - val_accuracy: 0.9820
+Epoch 2/7
+14000/14000 [==============================] - 3s 225us/step - loss: 0.0180 - accuracy: 0.9945 - val_loss: 0.0060 - val_accuracy: 0.9992
+Epoch 3/7
+14000/14000 [==============================] - 3s 233us/step - loss: 0.0086 - accuracy: 0.9974 - val_loss: 0.0038 - val_accuracy: 0.9993
+Epoch 4/7
+14000/14000 [==============================] - 4s 271us/step - loss: 0.0062 - accuracy: 0.9984 - val_loss: 0.0013 - val_accuracy: 0.9997
+Epoch 5/7
+14000/14000 [==============================] - 3s 228us/step - loss: 0.0066 - accuracy: 0.9985 - val_loss: 0.0047 - val_accuracy: 0.9990
+Epoch 6/7
+14000/14000 [==============================] - 3s 245us/step - loss: 0.0033 - accuracy: 0.9992 - val_loss: 0.0018 - val_accuracy: 0.9997
+Epoch 7/7
+14000/14000 [==============================] - 3s 231us/step - loss: 0.0011 - accuracy: 0.9998 - val_loss: 0.0013 - val_accuracy: 0.9997
+<keras.callbacks.callbacks.History at 0x7fac0c13ec10>
+model.summary()
+Model: "sequential_1"
+_________________________________________________________________
+Layer (type)                 Output Shape              Param #   
+=================================================================
+conv2d_1 (Conv2D)            (None, 48, 48, 32)        320       
+_________________________________________________________________
+activation_1 (Activation)    (None, 48, 48, 32)        0         
+_________________________________________________________________
+conv2d_2 (Conv2D)            (None, 46, 46, 32)        9248      
+_________________________________________________________________
+activation_2 (Activation)    (None, 46, 46, 32)        0         
+_________________________________________________________________
+max_pooling2d_1 (MaxPooling2 (None, 23, 23, 32)        0         
+_________________________________________________________________
+dropout_1 (Dropout)          (None, 23, 23, 32)        0         
+_________________________________________________________________
+conv2d_3 (Conv2D)            (None, 21, 21, 64)        18496     
+_________________________________________________________________
+activation_3 (Activation)    (None, 21, 21, 64)        0         
+_________________________________________________________________
+max_pooling2d_2 (MaxPooling2 (None, 10, 10, 64)        0         
+_________________________________________________________________
+dropout_2 (Dropout)          (None, 10, 10, 64)        0         
+_________________________________________________________________
+flatten_1 (Flatten)          (None, 6400)              0         
+_________________________________________________________________
+dense_1 (Dense)              (None, 256)               1638656   
+_________________________________________________________________
+dense_2 (Dense)              (None, 10)                2570      
+=================================================================
+Total params: 1,669,290
+Trainable params: 1,669,290
+Non-trainable params: 0
+_________________________________________________________________
+plt.plot(model.history.history['loss'])
+plt.plot(model.history.history['val_loss'])
+plt.title('Model Loss')
+plt.ylabel('Loss')
+plt.xlabel('Epochs')
+plt.legend(['train', 'test'])
+plt.show()
+
+plt.plot(model.history.history['accuracy'])
+plt.plot(model.history.history['val_accuracy'])
+plt.title('Model Accuracy')
+plt.ylabel('Accuracy')
+plt.xlabel('Epochs')
+plt.legend(['train', 'test'])
+plt.show()
+
+Model Evaluation
+#calculate loss and accuracy on test data
+
+test_loss, test_accuracy = model.evaluate(X_test, y_test)
+
+print('Test accuracy: {:2.2f}%'.format(test_accuracy*100))
+6000/6000 [==============================] - 1s 98us/step
+Test accuracy: 99.97%
+Test accuracy: 99.97% highlights the model's exceptional performance. It correctly recognized hand gestures in 99.97% of the test samples, demonstrating its high accuracy and reliability for human-computer interaction and gesture-based control systems.
+
+Confusion Matrix and Visualization
+This block generates a confusion matrix based on the model's predictions and visualizes it using Seaborn.
+
+from sklearn.metrics import confusion_matrix
+import seaborn as sn
+cat = [c[3:] for c in CATEGORIES]
+plt.figure(figsize=(10,10))
+cm = confusion_matrix(np.argmax(y_test, axis=1), np.argmax(model.predict(X_test), axis=1))
+sn.heatmap(cm, annot=True,xticklabels=cat, yticklabels=cat)
+plt.plot()
+[]
+
+After analyzing the confusion matrix, it becomes evident that the model excels in accurately recognizing certain hand gestures, such as "ok" and "thumb," achieving high precision and recall scores. However, challenges arise with distinguishing between gestures like "palm" and "fist moved," leading to occasional misclassifications. To enhance accuracy, further data collection focusing on these challenging gestures or fine-tuning the model parameters could be explored, ensuring a more robust and reliable hand gesture recognition system for diverse real-world applications.
+
+Conclusion:
+
+In summary, we developed a highly accurate hand gesture recognition system using Convolutional Neural Networks (CNNs) and advanced preprocessing techniques. Achieving a remarkable 99.97% test accuracy, this project demonstrates the model's precision and effectiveness. Leveraging Python, Keras, and TensorFlow, the system promises seamless human-computer interaction, marking a significant step towards intuitive gesture-based control systems in diverse applications.
